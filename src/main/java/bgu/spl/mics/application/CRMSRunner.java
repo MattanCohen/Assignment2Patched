@@ -29,7 +29,7 @@ import com.google.gson.JsonObject;
 public class CRMSRunner {
     public static void main(String[] args) {
 //        String inputFilePath=args[0];
-        String inputFilePath = "C:\\Caze Mattan\\University\\2nd year\\3rd semester\\courses\\SPL\\Project2\\Assignment\\Moodle files\\assignment2_FILES - Git bad student good gpu cpu\\assingment2SPL\\example_input.json";
+        String inputFilePath = "C:\\Caze Mattan\\University\\2nd year\\3rd semester\\courses\\SPL\\Project2\\Assignment\\Moodle files\\Assignment2Patched\\example_input.json ";
 
         JsonObject inputJson = readJsonFile(inputFilePath);
         Student[] students = extractStudentList(inputJson);
