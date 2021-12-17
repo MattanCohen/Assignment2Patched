@@ -8,6 +8,7 @@ import bgu.spl.mics.application.objects.Model;
 import bgu.spl.mics.application.objects.Student;
 
 import javax.print.attribute.standard.MediaSize;
+import java.awt.*;
 import java.util.ConcurrentModificationException;
 import java.util.LinkedList;
 import java.util.Queue;
@@ -48,13 +49,10 @@ public class StudentService extends MicroService {
         noneTestedModels=new LinkedList<>();
     }
 
-    public LinkedList<Model> getNoneTrainedModels() {
-        return noneTrainedModels;
-    }
-
     public Boolean isTrained(Model model){return model.getStatus().toString()=="Trained";}
     public Boolean isPreTrained(Model model){return model.getStatus().toString()=="PreTrained";}
-    public Boolean isGood(Model model){return model.getResult().toString()!="None";}
+    public Boolean isTested(Model model){return model.getResult().toString()!="None";}
+
     @Override
     protected void initialize() {
         // register to message bus
@@ -62,37 +60,34 @@ public class StudentService extends MicroService {
         // Add message+callback to subscriptions
         subscribeBroadcast(PublishConferenceBroadcast.class, b->{
             LinkedList<Model> publishedModels = b.getPublishedModels();
-            // each model in the conference changes Student
             for(Model m:publishedModels) {
-                // Student has another published paper or read another paper
-                if (m.getStudent() == std) {
-                    std.publicationsIncrement();
-                }
-                else {
-                    std.papersReadIncrement();
-                }
+                Student modelStudent = m.getStudent();
+                if (std == modelStudent) { std.publicationsIncrement(); }
+                else { std.papersReadIncrement(); }
             }
+
         });
         subscribeBroadcast(TickBroadcast.class,b->{
             try {
+                for(Model m: noneTestedModels) {
+                    if (isTested(m)) {
+                        if (m.getResult() == Model.Result.Good) {
+                            MessageBusImpl.getInstance().sendEvent(new PublishResultsEvent(m));
+                        }
+                        noneTestedModels.remove(m);
+                    }
+                }
                 for (Model m : noneTrainedModels) {
                     if (isTrained(m)) {
-                        noneTrainedModels.remove(m);
                         MessageBusImpl.getInstance().sendEvent(new TestModelEvent(m));
+                        noneTrainedModels.remove(m);
+                        noneTestedModels.add(m);
                     } else if (isPreTrained(m)) {
                         m.setStatus(Model.Status.Training);
                         MessageBusImpl.getInstance().sendEvent(new TrainModelEvent(m));
                     }
                 }
-            }catch (ConcurrentModificationException e){}
-                for (Model m: noneTestedModels){
-                    if (isGood(m)) {
-                        noneTestedModels.remove(m);
-                        if (m.getResult()== Model.Result.Good)
-                            MessageBusImpl.getInstance().sendEvent(new PublishResultsEvent(m));
-                    }
-                }
-
+            } catch (ConcurrentModificationException e){}
         });
     }
 }
