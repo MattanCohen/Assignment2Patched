@@ -125,6 +125,8 @@ public class CRMSRunner {
         // calculate statistics
         cluster.statistics();
 
+
+
         //if time to terminate has come, unregister all students
         for (StudentService s : studentServices)
             MessageBusImpl.getInstance().unregister(s);
